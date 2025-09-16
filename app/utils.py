@@ -9,13 +9,46 @@ from tempfile import NamedTemporaryFile
 from dotenv import load_dotenv
 import fitz  # PyMuPDF for PDF handling
 
+
 # 🔐 Load OpenAI API key from .env file
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
-# 🧠 Placeholder for future GPT-based analysis
-def analyze_resume(file):
-    return {"message": "Resume analysis will go here."}
+from openai import OpenAI
+
+
+def analyze_resume(resume_text: str):
+    try:
+        prompt = f"""
+        You are a professional resume reviewer.
+
+        Please analyze the following resume and return:
+        1. A short summary of the resume's strengths
+        2. Any weaknesses or areas for improvement (missing skills, formatting, etc.)
+        3. Specific suggestions for improving the resume for software engineering jobs
+        4. A score from 1-10 on how well the resume is tailored for software engineering roles
+        Resume:
+        {resume_text}
+        """
+
+        client = OpenAI(api_key=openai_api_key)
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful AI resume reviewer."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=800
+        )
+
+        feedback = response.choices[0].message.content
+        return {"analysis": feedback}
+
+    except Exception as e:
+        print("❌ OpenAI error:", e)
+        return {"error": "There was an issue analyzing the resume with GPT."}
 
 # 📄 Function to extract raw text from a PDF file uploaded via FastAPI
 def extract_text_from_pdf(upload_file):

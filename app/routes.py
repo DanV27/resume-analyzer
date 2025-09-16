@@ -27,8 +27,6 @@ async def analyze(file: UploadFile = File(...)):
     if not text:
         return {"error": "Could not extract text from the uploaded PDF."}
 
-    # ✅ Return the extracted text (just first 1000 characters for preview)
-    return {
-        "extracted_text": text[:1000],
-        "note": "Preview limited to 1000 characters. Analysis coming soon."
-    }
+    # Feedback from OpenAI analysis
+    feedback = analyze_resume(text)
+    return feedback
