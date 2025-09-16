@@ -15,40 +15,50 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 from openai import OpenAI
+import json
 
+client = OpenAI(api_key=openai_api_key)
 
 def analyze_resume(resume_text: str):
     try:
         prompt = f"""
         You are a professional resume reviewer.
 
-        Please analyze the following resume and return:
-        1. A short summary of the resume's strengths
-        2. Any weaknesses or areas for improvement (missing skills, formatting, etc.)
-        3. Specific suggestions for improving the resume for software engineering jobs
-        4. A score from 1-10 on how well the resume is tailored for software engineering roles
+        Analyze the following resume and return your response **as a valid JSON object** with the following fields:
+        - summary
+        - strengths
+        - weaknesses
+        - suggestions
+        - score
+
         Resume:
         {resume_text}
         """
 
-        client = OpenAI(api_key=openai_api_key)
-
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful AI resume reviewer."},
+                {"role": "system", "content": "You are a helpful and structured resume review assistant."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=800
+            max_tokens=1000
         )
 
-        feedback = response.choices[0].message.content
-        return {"analysis": feedback}
+        raw_output = response.choices[0].message.content.strip()
+
+        # Try to parse as JSON
+        try:
+            structured = json.loads(raw_output)
+            return structured
+        except json.JSONDecodeError:
+            print("⚠️ GPT returned invalid JSON")
+            return {"raw_analysis": raw_output}
 
     except Exception as e:
         print("❌ OpenAI error:", e)
         return {"error": "There was an issue analyzing the resume with GPT."}
+
 
 # 📄 Function to extract raw text from a PDF file uploaded via FastAPI
 def extract_text_from_pdf(upload_file):
